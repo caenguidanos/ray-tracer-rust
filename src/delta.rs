@@ -1,0 +1,1 @@
+pub const DELTA_TOLERANCE: f64 = 0.00001;
