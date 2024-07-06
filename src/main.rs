@@ -2,6 +2,7 @@
 
 mod assert;
 mod canvas;
+mod matrix;
 mod ppm;
 pub use canvas::*;
 use tracing::info;

@@ -3,6 +3,7 @@ use std::{
     fmt,
     ops::{Add, Mul, Sub},
 };
+use tracing::debug;
 
 use crate::{delta::DELTA_TOLERANCE, vectorial_space::Coordinates};
 
@@ -184,12 +185,13 @@ where
         }
     }
 
-    pub fn get_position(&self, Coordinates { x, y }: &Coordinates) -> Result<usize, Error> {
+    pub fn get_position(&self, Coordinates { x, y }: &Coordinates) -> Option<usize> {
         if *y > self.height || *x > self.width {
-            return Err(Error::WriteOverflowCoordinates(*x, *y));
+            debug!("{}", Error::WriteOverflowCoordinates(*x, *y));
+            return None;
         }
 
-        Ok(((self.height - y) * self.width + x) - 1)
+        Some(((self.height - y) * self.width + x) - 1)
     }
 
     pub fn write_position(&mut self, position: &usize, color: &Color) -> Result<(), Error> {
@@ -207,7 +209,11 @@ where
         coordinates: &Coordinates,
         color: &Color,
     ) -> Result<(), Error> {
-        self.write_position(&self.get_position(coordinates)?, color)
+        if let Some(position) = self.get_position(coordinates) {
+            return self.write_position(&position, color);
+        }
+
+        Ok(())
     }
 }
 

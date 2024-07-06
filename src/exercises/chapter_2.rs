@@ -5,8 +5,8 @@ use tracing::{trace, warn};
 use crate::{ppm::PPMFile, vectorial_space::*, Canvas, Color};
 
 pub fn main() {
-    const WIDTH: usize = 1024;
-    const HEIGHT: usize = 768;
+    const WIDTH: usize = 1920;
+    const HEIGHT: usize = 1080;
 
     let mut canvas = Canvas::<WIDTH, HEIGHT>::new();
 
