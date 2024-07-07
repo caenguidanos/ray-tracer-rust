@@ -36,6 +36,29 @@ where
         }
     }
 
+    pub fn transpose<const T_ROWS: usize, const T_COLS: usize>(self) -> Matrix<T_ROWS, T_COLS>
+    where
+        [f64; T_ROWS * T_COLS]:,
+    {
+        let mut matrix = Matrix::<T_ROWS, T_COLS>::new();
+
+        for position in 0..self.data.len() {
+            let Some((row, col)) = self.get_row_col(position) else {
+                continue;
+            };
+            let Some(value) = self.data.get(position) else {
+                continue;
+            };
+            let Some(transposed) = matrix.get_mut(col, row) else {
+                continue;
+            };
+
+            *transposed = *value;
+        }
+
+        matrix
+    }
+
     pub fn get(&self, row: usize, col: usize) -> Option<&f64> {
         let position = self.get_position(row, col)?;
         self.data.get(position)
@@ -60,7 +83,7 @@ where
         self
     }
 
-    fn get_position(&self, row: usize, col: usize) -> Option<usize> {
+    pub fn get_position(&self, row: usize, col: usize) -> Option<usize> {
         if (row > self.rows || row == 0) || (col > self.cols || col == 0) {
             return None;
         }
@@ -69,6 +92,26 @@ where
 
         if position < self.data.len() {
             return Some(position);
+        }
+
+        None
+    }
+
+    pub fn get_row_col(&self, position: usize) -> Option<(usize, usize)> {
+        if position >= self.data.len() {
+            return None;
+        }
+
+        for (row, chunk) in (0..self.data.len())
+            .collect::<Vec<_>>()
+            .chunks(self.cols)
+            .enumerate()
+        {
+            for (col, element) in chunk.iter().enumerate() {
+                if position == *element {
+                    return Some((row + 1, col + 1));
+                }
+            }
         }
 
         None
@@ -248,16 +291,19 @@ mod tests {
     fn matrix_can_be_created() {
         let matrix = Matrix::<10, 10>::new();
 
-        assert_eq!(matrix.get(1, 1), Some(&0f64));
-        assert_eq!(matrix.get(2, 2), Some(&0f64));
-        assert_eq!(matrix.get(3, 3), Some(&0f64));
-        assert_eq!(matrix.get(4, 4), Some(&0f64));
-        assert_eq!(matrix.get(5, 5), Some(&0f64));
-        assert_eq!(matrix.get(6, 6), Some(&0f64));
-        assert_eq!(matrix.get(7, 7), Some(&0f64));
-        assert_eq!(matrix.get(8, 8), Some(&0f64));
-        assert_eq!(matrix.get(9, 9), Some(&0f64));
-        assert_eq!(matrix.get(10, 10), Some(&0f64));
+        #[rustfmt::skip]
+        assert_eq!(matrix.data, [
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        ]);
     }
 
     #[test]
@@ -323,15 +369,15 @@ mod tests {
         #[rustfmt::skip]
         let matrix = Matrix::<4, 3>::from([
             1., 1., 1.,
-            0., 0., 0.,
-            0., 0., 0.,
-            0., 0., 0.,
+            0., 1., 0.,
+            0., 0., 1.,
+            1., 0., 0.,
         ]);
 
         assert_eq!(matrix.get_row(1), Ok([1., 1., 1.]));
-        assert_eq!(matrix.get_row(2), Ok([0., 0., 0.]));
-        assert_eq!(matrix.get_row(3), Ok([0., 0., 0.]));
-        assert_eq!(matrix.get_row(4), Ok([0., 0., 0.]));
+        assert_eq!(matrix.get_row(2), Ok([0., 1., 0.]));
+        assert_eq!(matrix.get_row(3), Ok([0., 0., 1.]));
+        assert_eq!(matrix.get_row(4), Ok([1., 0., 0.]));
     }
 
     #[test]
@@ -386,15 +432,15 @@ mod tests {
     fn matrix_can_get_col() {
         #[rustfmt::skip]
         let matrix = Matrix::<3, 4>::from([
-            0., 0., 1., 0.,
-            0., 0., 1., 0.,
-            0., 0., 1., 0.,
+            1., 0., 1., 0.,
+            0., 1., 1., 0.,
+            0., 0., 1., 1.,
         ]);
 
-        assert_eq!(matrix.get_col(1), Ok([0., 0., 0.,]));
-        assert_eq!(matrix.get_col(2), Ok([0., 0., 0.]));
+        assert_eq!(matrix.get_col(1), Ok([1., 0., 0.,]));
+        assert_eq!(matrix.get_col(2), Ok([0., 1., 0.]));
         assert_eq!(matrix.get_col(3), Ok([1., 1., 1.]));
-        assert_eq!(matrix.get_col(4), Ok([0., 0., 0.]));
+        assert_eq!(matrix.get_col(4), Ok([0., 0., 1.]));
     }
 
     #[test]
@@ -452,5 +498,90 @@ mod tests {
 
         assert_eq!(matrix.set_col(0, col), Err(Error::OverflowCol(0)));
         assert_eq!(matrix.set_col(3, col), Err(Error::OverflowCol(3)));
+    }
+
+    #[test]
+    fn matrix_can_extract_rowcol_from_position() {
+        #[rustfmt::skip]
+        let matrix = Matrix::<3, 3>::from([
+            1., 2., 3.,
+            4., 5., 6.,
+            7., 8., 9.,
+        ]);
+
+        assert_eq!(Some((1, 1)), matrix.get_row_col(0));
+        assert_eq!(Some((1, 2)), matrix.get_row_col(1));
+        assert_eq!(Some((1, 3)), matrix.get_row_col(2));
+        assert_eq!(Some((2, 1)), matrix.get_row_col(3));
+        assert_eq!(Some((2, 2)), matrix.get_row_col(4));
+        assert_eq!(Some((2, 3)), matrix.get_row_col(5));
+        assert_eq!(Some((3, 1)), matrix.get_row_col(6));
+        assert_eq!(Some((3, 2)), matrix.get_row_col(7));
+        assert_eq!(Some((3, 3)), matrix.get_row_col(8));
+
+        #[rustfmt::skip]
+        let matrix = Matrix::<3, 1>::from([
+            1.,
+            4.,
+            7.,
+        ]);
+
+        assert_eq!(Some((1, 1)), matrix.get_row_col(0));
+        assert_eq!(Some((2, 1)), matrix.get_row_col(1));
+        assert_eq!(Some((3, 1)), matrix.get_row_col(2));
+
+        #[rustfmt::skip]
+        let matrix = Matrix::<1, 3>::from([
+            1., 4., 7.,
+        ]);
+
+        assert_eq!(Some((1, 1)), matrix.get_row_col(0));
+        assert_eq!(Some((1, 2)), matrix.get_row_col(1));
+        assert_eq!(Some((1, 3)), matrix.get_row_col(2));
+    }
+
+    #[test]
+    fn matrix_can_be_transposed() {
+        #[rustfmt::skip]
+        let matrix = Matrix::<3, 2>::from([
+            1., 2.,
+            3., 4.,
+            5., 6.,
+        ]);
+
+        #[rustfmt::skip]
+        let transposed = Matrix::<2, 3>::from([
+            1., 3., 5.,
+            2., 4., 6.
+        ]);
+
+        assert_eq!(matrix.transpose(), transposed);
+
+        #[rustfmt::skip]
+        let matrix = Matrix::<2, 2>::from([
+            1., 2.,
+            3., 4.,
+        ]);
+
+        #[rustfmt::skip]
+        let transposed = Matrix::<2, 2>::from([
+            1., 3.,
+            2., 4.,
+        ]);
+
+        assert_eq!(matrix.transpose(), transposed);
+
+        #[rustfmt::skip]
+        let matrix = Matrix::<1, 2>::from([
+            1., 2.,
+        ]);
+
+        #[rustfmt::skip]
+        let transposed = Matrix::<2, 1>::from([
+            1.,
+            2.,
+        ]);
+
+        assert_eq!(matrix.transpose(), transposed);
     }
 }
