@@ -78,6 +78,36 @@ where
         Some(position)
     }
 
+    pub fn get_row(&self, row: usize) -> Result<[f64; COLS], Error> {
+        if row > ROWS || row == 0 {
+            return Err(Error::WriteOverflowRow(row));
+        }
+
+        let mut data: [f64; COLS] = [0.; COLS];
+
+        let origin_position = (row * self.cols) - self.cols;
+        let target_position = row * self.cols;
+
+        if origin_position >= self.data.len() {
+            return Err(Error::WriteOverflowIndex(origin_position));
+        }
+        if target_position >= self.data.len() {
+            return Err(Error::WriteOverflowIndex(target_position));
+        }
+        if target_position - origin_position != 4 {
+            return Err(Error::WriteOverflowIndex(target_position));
+        }
+
+        for (index, element) in self.data.as_slice()[origin_position..target_position]
+            .iter()
+            .enumerate()
+        {
+            data[index] = *element;
+        }
+
+        Ok(data)
+    }
+
     pub fn set_row(&mut self, row: usize, data: [f64; COLS]) -> Result<(), Error> {
         if row > ROWS || row == 0 {
             return Err(Error::WriteOverflowRow(row));
@@ -257,6 +287,21 @@ mod tests {
         ]);
 
         assert_ne!(matrix_1, matrix_2);
+    }
+
+    #[test]
+    fn matrix_can_get_row() {
+        #[rustfmt::skip]
+        let matrix = Matrix::<4, 4>::from([
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+            1., 1., 1., 1.,
+            0., 0., 0., 0.,
+        ]);
+
+        let row: [f64; 4] = [1., 1., 1., 1.];
+
+        assert_eq!(matrix.get_row(3).unwrap(), row);
     }
 
     #[test]
