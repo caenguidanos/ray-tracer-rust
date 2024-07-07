@@ -1,4 +1,12 @@
+use derive_more::Display;
+
 use crate::delta::DELTA_TOLERANCE;
+
+#[derive(Debug, Display, Clone, Copy, PartialEq)]
+pub enum Error {
+    #[display(fmt = "Write overflow at index {}", _0)]
+    WriteOverflowIndex(usize),
+}
 
 #[derive(Debug, Clone)]
 pub struct Matrix<const ROWS: usize, const COLS: usize>
@@ -14,23 +22,6 @@ impl<const ROWS: usize, const COLS: usize> Matrix<ROWS, COLS>
 where
     [f64; ROWS * COLS]:,
 {
-    fn get_position(&self, row: usize, col: usize) -> Option<usize> {
-        if row > self.rows || row == 0 {
-            return None;
-        }
-        if col > self.cols || col == 0 {
-            return None;
-        }
-
-        let position = row * self.cols - (self.cols - col) - 1;
-
-        if position > self.data.len() - 1 {
-            return None;
-        }
-
-        Some(position)
-    }
-
     pub fn new() -> Self {
         Self {
             rows: ROWS,
@@ -49,6 +40,31 @@ where
         Some((position, &mut self.data[position]))
     }
 
+    pub fn set_row(&mut self, row: usize, data: [f64; COLS]) -> Result<(), Error> {
+        let origin_position = (row * self.cols) - self.cols;
+        let target_position = row * self.cols;
+
+        if origin_position >= self.data.len() {
+            return Err(Error::WriteOverflowIndex(origin_position));
+        }
+        if target_position >= self.data.len() {
+            return Err(Error::WriteOverflowIndex(target_position));
+        }
+        if target_position - origin_position != 4 {
+            return Err(Error::WriteOverflowIndex(target_position));
+        }
+
+        let mut data = data.into_iter();
+
+        for position in origin_position..target_position {
+            if let Some(value) = data.next() {
+                self.data[position] = value;
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn identity(mut self) -> Self {
         if self.rows != self.cols {
             return self;
@@ -62,6 +78,23 @@ where
         }
 
         self
+    }
+
+    fn get_position(&self, row: usize, col: usize) -> Option<usize> {
+        if row > self.rows || row == 0 {
+            return None;
+        }
+        if col > self.cols || col == 0 {
+            return None;
+        }
+
+        let position = row * self.cols - (self.cols - col) - 1;
+
+        if position > self.data.len() - 1 {
+            return None;
+        }
+
+        Some(position)
     }
 }
 
@@ -188,5 +221,27 @@ mod tests {
         ]);
 
         assert_ne!(matrix_1, matrix_2);
+    }
+
+    #[test]
+    fn matrix_can_set_row() {
+        #[rustfmt::skip]
+        let mut matrix = Matrix::<4, 4>::from([
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+        ]);
+
+        let row: [f64; 4] = [1., 1., 1., 1.];
+        matrix.set_row(2, row).unwrap();
+
+        #[rustfmt::skip]
+        assert_eq!(matrix, Matrix::<4, 4>::from([
+            0., 0., 0., 0.,
+            1., 1., 1., 1.,
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+        ]));
     }
 }
