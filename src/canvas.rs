@@ -92,9 +92,9 @@ impl Color {
 
 impl PartialEq for Color {
     fn eq(&self, other: &Self) -> bool {
-        ((self.r - other.r) < DELTA_TOLERANCE)
-            && ((self.g - other.g) < DELTA_TOLERANCE)
-            && ((self.b - other.b) < DELTA_TOLERANCE)
+        ((self.r - other.r).abs() < DELTA_TOLERANCE)
+            && ((self.g - other.g).abs() < DELTA_TOLERANCE)
+            && ((self.b - other.b).abs() < DELTA_TOLERANCE)
     }
 }
 
@@ -241,8 +241,9 @@ mod tests {
     fn colors_can_be_substracted() {
         let color_1 = Color::new(0.9, 0.6, 0.75);
         let color_2 = Color::new(0.7, 0.1, 0.25);
+
         assert_eq!(color_1 - color_2, Color::new(0.2, 0.5, 0.5));
-        assert_eq!(color_2 - color_1, Color::new(0.2, 0.5, 0.5));
+        assert_eq!(color_2 - color_1, Color::new(-0.2, -0.5, -0.5));
     }
 
     #[test]
@@ -284,12 +285,11 @@ mod tests {
     }
 
     #[test]
-    fn canvas_cant_be_writted_with_overflow_position() {
+    fn canvas_will_be_not_writted_if_overflow_position() {
         let mut canvas = Canvas::<10, 20>::new();
         let color = Color::red();
-        assert_eq!(
-            Err(Error::WriteOverflowCoordinates(200, 300)),
-            canvas.write_coordinates(&Coordinates { x: 200, y: 300 }, &color)
-        );
+        let coordinates = Coordinates { x: 200, y: 300 };
+        canvas.write_coordinates(&coordinates, &color).unwrap();
+        assert_eq!(None, canvas.get_position(&coordinates));
     }
 }

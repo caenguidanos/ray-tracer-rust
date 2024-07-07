@@ -131,9 +131,9 @@ impl SpaceElement<Point> {
 
 impl PartialEq for SpaceElement<Point> {
     fn eq(&self, other: &Self) -> bool {
-        ((self.x - other.x) < DELTA_TOLERANCE)
-            && ((self.y - other.y) < DELTA_TOLERANCE)
-            && ((self.z - other.z) < DELTA_TOLERANCE)
+        ((self.x - other.x).abs() < DELTA_TOLERANCE)
+            && ((self.y - other.y).abs() < DELTA_TOLERANCE)
+            && ((self.z - other.z).abs() < DELTA_TOLERANCE)
     }
 }
 
@@ -253,9 +253,9 @@ impl SpaceElement<Vector> {
 
 impl PartialEq for SpaceElement<Vector> {
     fn eq(&self, other: &Self) -> bool {
-        ((self.x - other.x) < DELTA_TOLERANCE)
-            && ((self.y - other.y) < DELTA_TOLERANCE)
-            && ((self.z - other.z) < DELTA_TOLERANCE)
+        ((self.x - other.x).abs() < DELTA_TOLERANCE)
+            && ((self.y - other.y).abs() < DELTA_TOLERANCE)
+            && ((self.z - other.z).abs() < DELTA_TOLERANCE)
     }
 }
 

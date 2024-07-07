@@ -1,3 +1,5 @@
+use crate::delta::DELTA_TOLERANCE;
+
 #[derive(Debug, Clone)]
 pub struct Matrix<const ROWS: usize, const COLS: usize>
 where
@@ -63,6 +65,38 @@ where
     }
 }
 
+impl<const ROWS: usize, const COLS: usize> From<[f64; ROWS * COLS]> for Matrix<ROWS, COLS>
+where
+    [f64; ROWS * COLS]:,
+{
+    fn from(value: [f64; ROWS * COLS]) -> Self {
+        Self {
+            rows: ROWS,
+            cols: COLS,
+            data: value,
+        }
+    }
+}
+
+impl<const ROWS: usize, const COLS: usize> PartialEq for Matrix<ROWS, COLS>
+where
+    [f64; ROWS * COLS]:,
+{
+    fn eq(&self, other: &Self) -> bool {
+        if self.rows != other.rows || self.cols != other.cols {
+            return false;
+        }
+
+        for position in 0..ROWS * COLS {
+            if (self.data[position] - other.data[position]).abs() >= DELTA_TOLERANCE {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
 impl<const ROWS: usize, const COLS: usize> std::fmt::Display for Matrix<ROWS, COLS>
 where
     [f64; ROWS * COLS]:,
@@ -115,5 +149,44 @@ mod tests {
         assert_eq!(matrix.get(8, 8), Some((77, 1f64)));
         assert_eq!(matrix.get(9, 9), Some((88, 1f64)));
         assert_eq!(matrix.get(10, 10), Some((99, 1f64)));
+    }
+
+    #[test]
+    fn matrix_can_be_compared() {
+        #[rustfmt::skip]
+        let matrix_1 = Matrix::<4, 4>::from([
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+        ]);
+
+        #[rustfmt::skip]
+        let matrix_2 = Matrix::<4, 4>::from([
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+        ]);
+
+        assert_eq!(matrix_1, matrix_2);
+
+        #[rustfmt::skip]
+        let matrix_1 = Matrix::<4, 4>::from([
+            1., 0., 0., 0.,
+            3., 0., 0.4, 0.8,
+            5., 0., 0., 0.,
+            7., 0., 0., 0.,
+        ]);
+
+        #[rustfmt::skip]
+        let matrix_2 = Matrix::<4, 4>::from([
+            2., 0., 0., 0.,
+            4., 0., 0.6, 0.9,
+            6., 0., 0., 0.,
+            8., 0., 0., 0.,
+        ]);
+
+        assert_ne!(matrix_1, matrix_2);
     }
 }
