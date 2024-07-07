@@ -8,7 +8,7 @@ pub use canvas::*;
 use tracing::info;
 mod delta;
 mod exercises;
-mod vectorial_space;
+mod vectors;
 
 const STACK_SIZE: usize = 256 * 1024 * 1024;
 

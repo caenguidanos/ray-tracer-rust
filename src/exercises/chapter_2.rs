@@ -2,7 +2,7 @@ use core::fmt;
 
 use tracing::{trace, warn};
 
-use crate::{ppm::PPMFile, vectorial_space::*, Canvas, Color};
+use crate::{ppm::PPMFile, vectors::*, Canvas, Color};
 
 pub fn main() {
     const WIDTH: usize = 1920;

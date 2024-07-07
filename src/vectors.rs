@@ -34,17 +34,6 @@ impl<T: SpaceUnit> SpaceElement<T> {
     }
 }
 
-impl<T: SpaceUnit> Default for SpaceElement<T> {
-    fn default() -> Self {
-        Self {
-            x: 0.,
-            y: 0.,
-            z: 0.,
-            _mark: PhantomData,
-        }
-    }
-}
-
 impl<T: SpaceUnit> Neg for SpaceElement<T> {
     type Output = Self;
 
@@ -189,7 +178,7 @@ impl Sub<SpaceElement<Point>> for SpaceElement<Vector> {
     }
 }
 
-impl Sub<Self> for SpaceElement<Point> {
+impl Sub for SpaceElement<Point> {
     type Output = SpaceElement<Vector>;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -216,6 +205,19 @@ impl SpaceElement<Vector> {
             z,
             _mark: PhantomData,
         }
+    }
+
+    pub fn zero() -> Self {
+        Self {
+            x: 0.,
+            y: 0.,
+            z: 0.,
+            _mark: PhantomData,
+        }
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.x == 0. && self.y == 0. && self.z == 0.
     }
 
     pub fn magnitude(&self) -> f64 {
@@ -259,7 +261,7 @@ impl PartialEq for SpaceElement<Vector> {
     }
 }
 
-impl Add<Self> for SpaceElement<Vector> {
+impl Add for SpaceElement<Vector> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -272,7 +274,7 @@ impl Add<Self> for SpaceElement<Vector> {
     }
 }
 
-impl Sub<Self> for SpaceElement<Vector> {
+impl Sub for SpaceElement<Vector> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -347,7 +349,7 @@ mod tests {
 
     #[test]
     fn point_can_be_default() {
-        let point = SpaceElement::<Point>::default();
+        let point = SpaceElement::<Point>::new(0., 0., 0.);
 
         assert_eq!(point.x, 0.);
         assert_eq!(point.y, 0.);
@@ -356,7 +358,7 @@ mod tests {
 
     #[test]
     fn vector_can_be_default() {
-        let vector = SpaceElement::<Vector>::default();
+        let vector = SpaceElement::<Vector>::zero();
 
         assert_eq!(vector.x, 0.);
         assert_eq!(vector.y, 0.);
@@ -434,7 +436,7 @@ mod tests {
 
     #[test]
     fn substracting_vector_from_zero_vector() {
-        let zero = SpaceElement::<Vector>::default();
+        let zero = SpaceElement::<Vector>::zero();
         let vector = SpaceElement::<Vector>::new(5., 6., 7.);
         let expected = SpaceElement::<Vector>::new(-5., -6., -7.);
         assert_eq!(zero - vector, expected);

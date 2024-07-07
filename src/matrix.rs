@@ -1,4 +1,5 @@
 use derive_more::Display;
+use std::ops::{Add, Mul};
 
 use crate::delta::DELTA_TOLERANCE;
 
@@ -15,32 +16,36 @@ pub enum Error {
 }
 
 #[derive(Debug, Clone)]
-pub struct Matrix<const ROWS: usize, const COLS: usize>
+pub struct Matrix<const M: usize, const N: usize>
 where
-    [f64; ROWS * COLS]:,
+    [f64; M * N]:,
 {
     pub rows: usize,
     pub cols: usize,
-    pub data: [f64; ROWS * COLS],
+    pub data: [f64; M * N],
 }
 
-impl<const ROWS: usize, const COLS: usize> Matrix<ROWS, COLS>
+impl<const M: usize, const N: usize> Matrix<M, N>
 where
-    [f64; ROWS * COLS]:,
+    [f64; M * N]:,
 {
     pub fn new() -> Self {
         Self {
-            rows: ROWS,
-            cols: COLS,
-            data: [0.; ROWS * COLS],
+            rows: M,
+            cols: N,
+            data: [0.; M * N],
         }
     }
 
-    pub fn transpose<const T_ROWS: usize, const T_COLS: usize>(self) -> Matrix<T_ROWS, T_COLS>
+    pub fn is_zero(&self) -> bool {
+        self.data.iter().all(|element| *element == 0.)
+    }
+
+    pub fn transpose<const P: usize, const Q: usize>(self) -> Matrix<P, Q>
     where
-        [f64; T_ROWS * T_COLS]:,
+        [f64; P * Q]:,
     {
-        let mut matrix = Matrix::<T_ROWS, T_COLS>::new();
+        let mut matrix = Matrix::<P, Q>::new();
 
         for position in 0..self.data.len() {
             let Some((row, col)) = self.get_row_col(position) else {
@@ -117,12 +122,12 @@ where
         None
     }
 
-    pub fn get_row(&self, row: usize) -> Result<[f64; COLS], Error> {
-        if row > ROWS || row == 0 {
+    pub fn get_row(&self, row: usize) -> Result<[f64; N], Error> {
+        if row > M || row == 0 {
             return Err(Error::OverflowRow(row));
         }
 
-        let mut data: [f64; COLS] = [0.; COLS];
+        let mut data: [f64; N] = [0.; N];
 
         let origin_position = (row * self.cols) - self.cols;
         let target_position = row * self.cols;
@@ -133,7 +138,7 @@ where
         if target_position > self.data.len() {
             return Err(Error::OverflowIndex(target_position));
         }
-        if target_position - origin_position != COLS {
+        if target_position - origin_position != N {
             return Err(Error::OverflowIndex(target_position));
         }
 
@@ -147,8 +152,8 @@ where
         Ok(data)
     }
 
-    pub fn set_row(&mut self, row: usize, data: [f64; COLS]) -> Result<(), Error> {
-        if row > ROWS || row == 0 {
+    pub fn set_row(&mut self, row: usize, data: [f64; N]) -> Result<(), Error> {
+        if row > M || row == 0 {
             return Err(Error::OverflowRow(row));
         }
 
@@ -161,7 +166,7 @@ where
         if target_position > self.data.len() {
             return Err(Error::OverflowIndex(target_position));
         }
-        if target_position - origin_position != COLS {
+        if target_position - origin_position != N {
             return Err(Error::OverflowIndex(target_position));
         }
 
@@ -176,18 +181,18 @@ where
         Ok(())
     }
 
-    pub fn get_col(&self, col: usize) -> Result<[f64; ROWS], Error> {
-        if col > COLS || col == 0 {
+    pub fn get_col(&self, col: usize) -> Result<[f64; M], Error> {
+        if col > N || col == 0 {
             return Err(Error::OverflowCol(col));
         }
 
-        let mut positions: [usize; ROWS] = [0; ROWS];
+        let mut positions: [usize; M] = [0; M];
 
-        for row in 1..=ROWS {
-            positions[row - 1] = row * COLS - (COLS - col) - 1;
+        for row in 1..=M {
+            positions[row - 1] = row * N - (N - col) - 1;
         }
 
-        let mut data: [f64; ROWS] = [0.; ROWS];
+        let mut data: [f64; M] = [0.; M];
 
         for n in 0..positions.len() {
             let position = positions[n];
@@ -206,15 +211,15 @@ where
         Ok(data)
     }
 
-    pub fn set_col(&mut self, col: usize, data: [f64; ROWS]) -> Result<(), Error> {
-        if col > COLS || col == 0 {
+    pub fn set_col(&mut self, col: usize, data: [f64; M]) -> Result<(), Error> {
+        if col > N || col == 0 {
             return Err(Error::OverflowCol(col));
         }
 
-        let mut positions: [usize; ROWS] = [0; ROWS];
+        let mut positions: [usize; M] = [0; M];
 
-        for row in 1..=ROWS {
-            positions[row - 1] = row * COLS - (COLS - col) - 1;
+        for row in 1..=M {
+            positions[row - 1] = row * N - (N - col) - 1;
         }
 
         let mut data = data.into_iter();
@@ -233,29 +238,29 @@ where
     }
 }
 
-impl<const ROWS: usize, const COLS: usize> From<[f64; ROWS * COLS]> for Matrix<ROWS, COLS>
+impl<const M: usize, const N: usize> From<[f64; M * N]> for Matrix<M, N>
 where
-    [f64; ROWS * COLS]:,
+    [f64; M * N]:,
 {
-    fn from(value: [f64; ROWS * COLS]) -> Self {
+    fn from(value: [f64; M * N]) -> Self {
         Self {
-            rows: ROWS,
-            cols: COLS,
+            rows: M,
+            cols: N,
             data: value,
         }
     }
 }
 
-impl<const ROWS: usize, const COLS: usize> PartialEq for Matrix<ROWS, COLS>
+impl<const M: usize, const N: usize> PartialEq for Matrix<M, N>
 where
-    [f64; ROWS * COLS]:,
+    [f64; M * N]:,
 {
     fn eq(&self, other: &Self) -> bool {
         if self.rows != other.rows || self.cols != other.cols {
             return false;
         }
 
-        for position in 0..ROWS * COLS {
+        for position in 0..M * N {
             if (self.data[position] - other.data[position]).abs() >= DELTA_TOLERANCE {
                 return false;
             }
@@ -265,9 +270,9 @@ where
     }
 }
 
-impl<const ROWS: usize, const COLS: usize> std::fmt::Display for Matrix<ROWS, COLS>
+impl<const M: usize, const N: usize> std::fmt::Display for Matrix<M, N>
 where
-    [f64; ROWS * COLS]:,
+    [f64; M * N]:,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut str = String::new();
@@ -280,6 +285,83 @@ where
             str.push('\n')
         }
         write!(f, "{str}")
+    }
+}
+
+impl<const M: usize, const N: usize> Add for Matrix<M, N>
+where
+    [f64; M * N]:,
+{
+    type Output = Self;
+
+    fn add(mut self, rhs: Self) -> Self::Output {
+        for position in 0..self.data.len() {
+            self.data[position] = self.data[position] + rhs.data[position];
+        }
+
+        self
+    }
+}
+
+impl<const M: usize, const N: usize> Mul<f64> for Matrix<M, N>
+where
+    [f64; M * N]:,
+{
+    type Output = Self;
+
+    fn mul(mut self, rhs: f64) -> Self::Output {
+        for position in 0..self.data.len() {
+            self.data[position] = self.data[position] * rhs;
+        }
+
+        self
+    }
+}
+
+impl<const M: usize, const N: usize> Mul<Matrix<M, N>> for f64
+where
+    [f64; M * N]:,
+{
+    type Output = Matrix<M, N>;
+
+    fn mul(self, mut rhs: Matrix<M, N>) -> Self::Output {
+        for position in 0..rhs.data.len() {
+            rhs.data[position] = rhs.data[position] * self;
+        }
+
+        rhs
+    }
+}
+
+impl<const M: usize, const N: usize, const P: usize> Mul<Matrix<N, P>> for Matrix<M, N>
+where
+    [f64; M * N]:,
+    [f64; N * P]:,
+    [f64; M * P]:,
+{
+    type Output = Matrix<M, P>;
+
+    fn mul(self, rhs: Matrix<N, P>) -> Self::Output {
+        let mut next = Matrix::<M, P>::new();
+
+        let mut position = 0;
+
+        for n in 1..=self.rows {
+            let Ok(row) = self.get_row(n) else {
+                return next;
+            };
+
+            for m in 1..=self.cols {
+                let Ok(col) = rhs.get_col(m) else {
+                    return next;
+                };
+
+                next.data[position] = std::iter::zip(row, col).map(|(a, b)| a * b).sum();
+                position += 1;
+            }
+        }
+
+        next
     }
 }
 
@@ -583,5 +665,29 @@ mod tests {
         ]);
 
         assert_eq!(matrix.transpose(), transposed);
+    }
+
+    #[test]
+    fn matrix_can_be_multiplied() {
+        #[rustfmt::skip]
+        let a = Matrix::<2, 3>::from([
+            1., 2., 3.,
+            4., 1., 0.
+        ]);
+
+        #[rustfmt::skip]
+        let b = Matrix::<3, 3>::from([
+            1.,  1.,  2.,
+            1., -1.,  0.,
+            2.,  0.,  3.,
+        ]);
+
+        #[rustfmt::skip]
+        let c = Matrix::<2, 3>::from([
+            9., -1., 11.,
+            5.,  3., 8.
+        ]);
+
+        assert_eq!(c, a * b);
     }
 }

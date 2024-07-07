@@ -5,7 +5,7 @@ use std::{
 };
 use tracing::debug;
 
-use crate::{delta::DELTA_TOLERANCE, vectorial_space::Coordinates};
+use crate::{delta::DELTA_TOLERANCE, vectors::Coordinates};
 
 #[derive(Debug, Display, Clone, Copy, PartialEq)]
 pub enum Error {
