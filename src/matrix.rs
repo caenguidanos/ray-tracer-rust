@@ -137,6 +137,35 @@ where
         Ok(())
     }
 
+    pub fn get_col(&self, col: usize) -> Result<[f64; ROWS], Error> {
+        if col > COLS || col == 0 {
+            return Err(Error::WriteOverflowCol(col));
+        }
+
+        let mut positions: [usize; ROWS] = [0; ROWS];
+
+        for row in 1..=ROWS {
+            positions[row - 1] = row * COLS - (COLS - col) - 1;
+        }
+
+        let mut data: [f64; ROWS] = [0.; ROWS];
+
+        for i in 0..positions.len() {
+            let position = positions[i];
+
+            if position >= self.data.len() {
+                return Err(Error::WriteOverflowIndex(position));
+            }
+            if i >= data.len() {
+                return Err(Error::WriteOverflowIndex(i));
+            }
+
+            data[i] = self.data[positions[i]];
+        }
+
+        Ok(data)
+    }
+
     pub fn set_col(&mut self, col: usize, data: [f64; ROWS]) -> Result<(), Error> {
         if col > COLS || col == 0 {
             return Err(Error::WriteOverflowCol(col));
@@ -325,6 +354,27 @@ mod tests {
             0., 0., 0., 0.,
             0., 0., 0., 0.,
         ]));
+    }
+
+    #[test]
+    fn matrix_can_get_col() {
+        #[rustfmt::skip]
+        let matrix = Matrix::<4, 4>::from([
+            0., 0., 1., 0.,
+            0., 0., 1., 0.,
+            0., 0., 1., 0.,
+            0., 0., 1., 0.,
+        ]);
+
+        #[rustfmt::skip]
+        let col: [f64; 4] = [
+            1.,
+            1.,
+            1.,
+            1.
+        ];
+
+        assert_eq!(matrix.get_col(3).unwrap(), col);
     }
 
     #[test]
