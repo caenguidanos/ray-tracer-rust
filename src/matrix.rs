@@ -6,6 +6,12 @@ use crate::delta::DELTA_TOLERANCE;
 pub enum Error {
     #[display(fmt = "Write overflow at index {}", _0)]
     WriteOverflowIndex(usize),
+
+    #[display(fmt = "Write overflow at row {}", _0)]
+    WriteOverflowRow(usize),
+
+    #[display(fmt = "Write overflow at col {}", _0)]
+    WriteOverflowCol(usize),
 }
 
 #[derive(Debug, Clone)]
@@ -40,31 +46,6 @@ where
         Some((position, &mut self.data[position]))
     }
 
-    pub fn set_row(&mut self, row: usize, data: [f64; COLS]) -> Result<(), Error> {
-        let origin_position = (row * self.cols) - self.cols;
-        let target_position = row * self.cols;
-
-        if origin_position >= self.data.len() {
-            return Err(Error::WriteOverflowIndex(origin_position));
-        }
-        if target_position >= self.data.len() {
-            return Err(Error::WriteOverflowIndex(target_position));
-        }
-        if target_position - origin_position != 4 {
-            return Err(Error::WriteOverflowIndex(target_position));
-        }
-
-        let mut data = data.into_iter();
-
-        for position in origin_position..target_position {
-            if let Some(value) = data.next() {
-                self.data[position] = value;
-            }
-        }
-
-        Ok(())
-    }
-
     pub fn identity(mut self) -> Self {
         if self.rows != self.cols {
             return self;
@@ -95,6 +76,61 @@ where
         }
 
         Some(position)
+    }
+
+    pub fn set_row(&mut self, row: usize, data: [f64; COLS]) -> Result<(), Error> {
+        if row > ROWS || row == 0 {
+            return Err(Error::WriteOverflowRow(row));
+        }
+
+        let origin_position = (row * self.cols) - self.cols;
+        let target_position = row * self.cols;
+
+        if origin_position >= self.data.len() {
+            return Err(Error::WriteOverflowIndex(origin_position));
+        }
+        if target_position >= self.data.len() {
+            return Err(Error::WriteOverflowIndex(target_position));
+        }
+        if target_position - origin_position != 4 {
+            return Err(Error::WriteOverflowIndex(target_position));
+        }
+
+        let mut data = data.into_iter();
+
+        for position in origin_position..target_position {
+            if let Some(value) = data.next() {
+                self.data[position] = value;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn set_col(&mut self, col: usize, data: [f64; ROWS]) -> Result<(), Error> {
+        if col > COLS || col == 0 {
+            return Err(Error::WriteOverflowCol(col));
+        }
+
+        let mut positions: [usize; ROWS] = [0; ROWS];
+
+        for row in 1..=ROWS {
+            positions[row - 1] = row * COLS - (COLS - col) - 1;
+        }
+
+        let mut data = data.into_iter();
+
+        for position in positions {
+            if position >= self.data.len() {
+                return Err(Error::WriteOverflowIndex(position));
+            }
+
+            if let Some(value) = data.next() {
+                self.data[position] = value;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -234,6 +270,7 @@ mod tests {
         ]);
 
         let row: [f64; 4] = [1., 1., 1., 1.];
+
         matrix.set_row(2, row).unwrap();
 
         #[rustfmt::skip]
@@ -242,6 +279,35 @@ mod tests {
             1., 1., 1., 1.,
             0., 0., 0., 0.,
             0., 0., 0., 0.,
+        ]));
+    }
+
+    #[test]
+    fn matrix_can_set_col() {
+        #[rustfmt::skip]
+        let mut matrix = Matrix::<4, 4>::from([
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+            0., 0., 0., 0.,
+        ]);
+
+        #[rustfmt::skip]
+        let col: [f64; 4] = [
+            1.,
+            1.,
+            1.,
+            1.
+        ];
+
+        matrix.set_col(2, col).unwrap();
+
+        #[rustfmt::skip]
+        assert_eq!(matrix, Matrix::<4, 4>::from([
+            0., 1., 0., 0.,
+            0., 1., 0., 0.,
+            0., 1., 0., 0.,
+            0., 1., 0., 0.,
         ]));
     }
 }
