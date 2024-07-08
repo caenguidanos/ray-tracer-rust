@@ -55,14 +55,11 @@ where
             let Some((row, col)) = self.get_row_col(position) else {
                 continue;
             };
-            let Some(value) = self.data.get(position) else {
-                continue;
-            };
-            let Some(transposed) = matrix.get_mut(col, row) else {
+            let Some(target_position) = matrix.get_position(col, row) else {
                 continue;
             };
 
-            *transposed = *value;
+            matrix.data[target_position] = self.data[position];
         }
 
         matrix
