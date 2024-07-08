@@ -45,34 +45,9 @@ where
         self.cols == self.rows
     }
 
-    pub fn transpose<const P: usize, const Q: usize>(self) -> Matrix<P, Q>
-    where
-        [f64; P * Q]:,
-    {
-        let mut matrix = Matrix::<P, Q>::new();
-
-        for position in 0..self.data.len() {
-            let Some((row, col)) = self.get_row_col(position) else {
-                continue;
-            };
-            let Some(target_position) = matrix.get_position(col, row) else {
-                continue;
-            };
-
-            matrix.data[target_position] = self.data[position];
-        }
-
-        matrix
-    }
-
     pub fn get(&self, row: usize, col: usize) -> Option<&f64> {
         let position = self.get_position(row, col)?;
         self.data.get(position)
-    }
-
-    pub fn get_mut(&mut self, row: usize, col: usize) -> Option<&mut f64> {
-        let position = self.get_position(row, col)?;
-        self.data.get_mut(position)
     }
 
     pub fn identity(mut self) -> Self {
@@ -89,6 +64,7 @@ where
         self
     }
 
+    /// The row and the col are non octal counts. Starts from 1..
     pub fn get_position(&self, row: usize, col: usize) -> Option<usize> {
         if (row > self.rows || row == 0) || (col > self.cols || col == 0) {
             return None;
@@ -121,6 +97,26 @@ where
         }
 
         None
+    }
+
+    pub fn transpose<const P: usize, const Q: usize>(self) -> Matrix<P, Q>
+    where
+        [f64; P * Q]:,
+    {
+        let mut matrix = Matrix::<P, Q>::new();
+
+        for position in 0..self.data.len() {
+            let Some((row, col)) = self.get_row_col(position) else {
+                continue;
+            };
+            let Some(target_position) = matrix.get_position(col, row) else {
+                continue;
+            };
+
+            matrix.data[target_position] = self.data[position];
+        }
+
+        matrix
     }
 
     pub fn get_row(&self, row: usize) -> Result<[f64; N], Error> {
