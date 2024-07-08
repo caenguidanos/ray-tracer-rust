@@ -4,7 +4,7 @@ use std::{
     ops::{Add, Div, Mul, Neg, Sub},
 };
 
-use crate::delta::DELTA_TOLERANCE;
+use crate::{delta::DELTA_TOLERANCE, matrix::Matrix};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Point;
@@ -115,6 +115,10 @@ impl SpaceElement<Point> {
         let z = self.z.round() as usize;
 
         (x, y, z)
+    }
+
+    pub fn to_matrix(&self) -> Matrix<4, 1> {
+        Matrix::from([self.x, self.z, self.y, 0.])
     }
 }
 
@@ -250,6 +254,10 @@ impl SpaceElement<Vector> {
             z: self.x * rhs.y - self.y * rhs.x,
             _mark: PhantomData,
         }
+    }
+
+    pub fn to_matrix(&self) -> Matrix<4, 1> {
+        Matrix::from([self.x, self.z, self.y, 1.])
     }
 }
 

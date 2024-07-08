@@ -41,6 +41,10 @@ where
         self.data.iter().all(|element| *element == 0.)
     }
 
+    pub fn is_square(&self) -> bool {
+        self.cols == self.rows
+    }
+
     pub fn transpose<const P: usize, const Q: usize>(self) -> Matrix<P, Q>
     where
         [f64; P * Q]:,
