@@ -75,7 +75,6 @@ where
         self
     }
 
-    /// The row and the col are non octal counts. Starts from 1..
     pub fn get_position(&self, row: usize, col: usize) -> Option<usize> {
         if (row > self.rows || row == 0) || (col > self.cols || col == 0) {
             return None;
@@ -95,16 +94,20 @@ where
             return None;
         }
 
-        for (row, chunk) in (0..self.data.len())
-            .collect::<Vec<_>>()
-            .chunks(self.cols)
-            .enumerate()
-        {
-            for (col, element) in chunk.iter().enumerate() {
-                if position == *element {
-                    return Some((row + 1, col + 1));
-                }
+        let mut col = 1;
+        let mut row = 1;
+
+        for n in 0..self.data.len() {
+            if col > self.cols {
+                row += 1;
+                col = 1;
             }
+
+            if n == position {
+                return Some((row, col));
+            }
+
+            col += 1;
         }
 
         None
@@ -131,11 +134,11 @@ where
     }
 
     pub fn get_row(&self, row: usize) -> Result<[f64; N], Error> {
-        if row > M || row == 0 {
+        if row > self.rows || row == 0 {
             return Err(Error::OverflowRow(row));
         }
 
-        let mut data: [f64; N] = [0.; N];
+        let mut row_arr: [f64; N] = [0.; N];
 
         let origin_position = (row * self.cols) - self.cols;
         let target_position = row * self.cols;
@@ -150,18 +153,21 @@ where
             return Err(Error::OverflowIndex(target_position));
         }
 
-        for (index, element) in self.data.as_slice()[origin_position..target_position]
-            .iter()
-            .enumerate()
-        {
-            data[index] = *element;
+        let mut insert_index = 0;
+        for n in 0..self.data.len() {
+            if n >= origin_position && n < target_position {
+                if insert_index < N {
+                    row_arr[insert_index] = self.data[n];
+                    insert_index += 1;
+                }
+            }
         }
 
-        Ok(data)
+        Ok(row_arr)
     }
 
     pub fn set_row(&mut self, row: usize, data: [f64; N]) -> Result<(), Error> {
-        if row > M || row == 0 {
+        if row > self.rows || row == 0 {
             return Err(Error::OverflowRow(row));
         }
 
@@ -190,7 +196,7 @@ where
     }
 
     pub fn get_col(&self, col: usize) -> Result<[f64; M], Error> {
-        if col > N || col == 0 {
+        if col > self.cols || col == 0 {
             return Err(Error::OverflowCol(col));
         }
 
@@ -220,7 +226,7 @@ where
     }
 
     pub fn set_col(&mut self, col: usize, data: [f64; M]) -> Result<(), Error> {
-        if col > N || col == 0 {
+        if col > self.cols || col == 0 {
             return Err(Error::OverflowCol(col));
         }
 
@@ -308,9 +314,12 @@ where
     type Output = Self;
 
     fn add(mut self, rhs: Self) -> Self::Output {
-        for position in 0..self.data.len() {
-            self.data[position] = self.data[position] + rhs.data[position];
-        }
+        self.data
+            .par_iter_mut()
+            .enumerate()
+            .for_each(|(position, element)| {
+                *element = *element + rhs.data[position];
+            });
 
         self
     }
@@ -323,9 +332,9 @@ where
     type Output = Self;
 
     fn mul(mut self, rhs: f64) -> Self::Output {
-        for position in 0..self.data.len() {
-            self.data[position] = self.data[position] * rhs;
-        }
+        self.data.par_iter_mut().for_each(|element| {
+            *element = *element + rhs;
+        });
 
         self
     }
@@ -338,9 +347,9 @@ where
     type Output = Matrix<M, N>;
 
     fn mul(self, mut rhs: Matrix<M, N>) -> Self::Output {
-        for position in 0..rhs.data.len() {
-            rhs.data[position] = rhs.data[position] * self;
-        }
+        rhs.data.par_iter_mut().for_each(|element| {
+            *element = *element + self;
+        });
 
         rhs
     }
@@ -683,29 +692,29 @@ mod tests {
         assert_eq!(matrix.transpose(), transposed);
     }
 
-    // #[test]
-    // fn matrix_can_be_multiplied() {
-    //     #[rustfmt::skip]
-    //     let a = Matrix::<2, 3>::from([
-    //          0.,  4., -2.,
-    //         -4., -3.,  0.
-    //     ]);
+    #[test]
+    fn matrix_can_be_multiplied() {
+        #[rustfmt::skip]
+        let a = Matrix::<2, 3>::from([
+             0.,  4., -2.,
+            -4., -3.,  0.
+        ]);
 
-    //     #[rustfmt::skip]
-    //     let b = Matrix::<3, 2>::from([
-    //         0.,  1.,
-    //         1., -1.,
-    //         2.,  3.,
-    //     ]);
+        #[rustfmt::skip]
+        let b = Matrix::<3, 2>::from([
+            0.,  1.,
+            1., -1.,
+            2.,  3.,
+        ]);
 
-    //     #[rustfmt::skip]
-    //     let c = Matrix::<2, 2>::from([
-    //          0.,  -10.,
-    //         -3.,  -1.,
-    //     ]);
+        #[rustfmt::skip]
+        let c = Matrix::<2, 2>::from([
+             0.,  -10.,
+            -3.,  -1.,
+        ]);
 
-    //     assert_eq!(c, a * b);
-    // }
+        assert_eq!(c, a * b);
+    }
 
     #[test]
     fn matrix_is_square() {
