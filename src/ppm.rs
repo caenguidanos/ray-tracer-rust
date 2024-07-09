@@ -20,12 +20,10 @@ impl PPMFile {
 
         let header = format!("P3\n{width} {height}\n255");
         buffer.write(header.as_bytes())?;
-        buffer.flush()?;
         drop(header);
 
         for chunk in pixels.chunks(*width) {
             buffer.write(b"\n")?;
-            buffer.flush()?;
 
             let mut section_chunks = vec![];
 
@@ -39,7 +37,6 @@ impl PPMFile {
             }
 
             buffer.write(section_chunks.join(" ").as_bytes())?;
-            buffer.flush()?;
         }
 
         buffer.write(b"\n")?;

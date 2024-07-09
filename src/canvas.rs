@@ -1,9 +1,9 @@
 use derive_more::Display;
+use rayon::iter::{IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
 use std::{
     fmt,
     ops::{Add, Mul, Sub},
 };
-use tracing::debug;
 
 use crate::{delta::DELTA_TOLERANCE, vectors::Coordinates};
 
@@ -179,15 +179,16 @@ where
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.pixels.par_iter().all(|p| *p == Color::black())
+    }
+
     pub fn clean(&mut self) {
-        for pixel in self.pixels.iter_mut() {
-            *pixel = Color::black();
-        }
+        self.pixels.par_iter_mut().for_each(|p| *p = Color::black());
     }
 
     pub fn get_position(&self, Coordinates { x, y }: &Coordinates) -> Option<usize> {
         if *y > self.height || *x > self.width {
-            debug!("{}", Error::WriteOverflowCoordinates(*x, *y));
             return None;
         }
 

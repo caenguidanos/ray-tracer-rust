@@ -1,5 +1,8 @@
 use derive_more::Display;
-use std::ops::{Add, Mul};
+use rayon::iter::{
+    IndexedParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator,
+};
+use std::ops::{Add, Mul, Neg};
 
 use crate::delta::DELTA_TOLERANCE;
 
@@ -38,11 +41,19 @@ where
     }
 
     pub fn is_zero(&self) -> bool {
-        self.data.iter().all(|element| *element == 0.)
+        self.data.par_iter().all(|element| *element == 0.)
     }
 
     pub fn is_square(&self) -> bool {
         self.cols == self.rows
+    }
+
+    pub fn is_simetric(&self) -> bool {
+        *self == self.clone().transpose()
+    }
+
+    pub fn is_antisimetric(&self) -> bool {
+        *self == -self.clone().transpose()
     }
 
     pub fn get(&self, row: usize, col: usize) -> Option<&f64> {
@@ -253,17 +264,22 @@ where
     [f64; M * N]:,
 {
     fn eq(&self, other: &Self) -> bool {
-        if self.rows != other.rows || self.cols != other.cols {
-            return false;
-        }
+        self.data
+            .par_iter()
+            .enumerate()
+            .all(|(idx, el)| (el - other.data[idx]).abs() < DELTA_TOLERANCE)
+    }
+}
 
-        for position in 0..M * N {
-            if (self.data[position] - other.data[position]).abs() >= DELTA_TOLERANCE {
-                return false;
-            }
-        }
+impl<const M: usize, const N: usize> Neg for Matrix<M, N>
+where
+    [f64; M * N]:,
+{
+    type Output = Self;
 
-        true
+    fn neg(mut self) -> Self::Output {
+        self.data.par_iter_mut().for_each(|p| *p = -*p);
+        self
     }
 }
 
