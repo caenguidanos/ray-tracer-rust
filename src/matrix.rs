@@ -154,12 +154,10 @@ where
         }
 
         let mut insert_index = 0;
-        for n in 0..self.data.len() {
-            if n >= origin_position && n < target_position {
-                if insert_index < N {
-                    row_arr[insert_index] = self.data[n];
-                    insert_index += 1;
-                }
+        for n in origin_position..target_position {
+            if insert_index < N {
+                row_arr[insert_index] = self.data[n];
+                insert_index += 1;
             }
         }
 
