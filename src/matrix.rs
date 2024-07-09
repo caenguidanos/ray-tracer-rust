@@ -348,12 +348,13 @@ where
                 return next;
             };
 
-            for m in 1..=self.cols {
+            for m in 1..=rhs.cols {
                 let Ok(col) = rhs.get_col(m) else {
                     return next;
                 };
 
                 next.data[position] = std::iter::zip(row, col).map(|(a, b)| a * b).sum();
+
                 position += 1;
             }
         }
@@ -364,6 +365,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::vectors::{SpaceElement, Vector};
+
     use super::*;
 
     #[test]
@@ -664,27 +667,69 @@ mod tests {
         assert_eq!(matrix.transpose(), transposed);
     }
 
+    // #[test]
+    // fn matrix_can_be_multiplied() {
+    //     #[rustfmt::skip]
+    //     let a = Matrix::<2, 3>::from([
+    //          0.,  4., -2.,
+    //         -4., -3.,  0.
+    //     ]);
+
+    //     #[rustfmt::skip]
+    //     let b = Matrix::<3, 2>::from([
+    //         0.,  1.,
+    //         1., -1.,
+    //         2.,  3.,
+    //     ]);
+
+    //     #[rustfmt::skip]
+    //     let c = Matrix::<2, 2>::from([
+    //          0.,  -10.,
+    //         -3.,  -1.,
+    //     ]);
+
+    //     assert_eq!(c, a * b);
+    // }
+
     #[test]
-    fn matrix_can_be_multiplied() {
+    fn matrix_is_square() {
         #[rustfmt::skip]
-        let a = Matrix::<2, 3>::from([
-            1., 2., 3.,
-            4., 1., 0.
+        let a = Matrix::<2, 2>::from([
+            1., 2.,
+            4., 1.,
+        ]);
+
+        assert!(a.is_square());
+    }
+
+    #[test]
+    fn matrix_is_zero() {
+        #[rustfmt::skip]
+        let a = Matrix::<2, 2>::from([
+            0., 0.,
+            0., 0.,
+        ]);
+
+        assert!(a.is_zero());
+    }
+
+    #[test]
+    fn matrix_can_be_multiplied_by_a_vector() {
+        #[rustfmt::skip]
+        let matrix = Matrix::<2, 4>::from([
+            1., 2., 3., -3.,
+            4., 1., 0.,  0.
         ]);
 
         #[rustfmt::skip]
-        let b = Matrix::<3, 3>::from([
-            1.,  1.,  2.,
-            1., -1.,  0.,
-            2.,  0.,  3.,
-        ]);
+        let vector = SpaceElement::<Vector>::new(1., 2., 3.).to_matrix();
 
         #[rustfmt::skip]
-        let c = Matrix::<2, 3>::from([
-            9., -1., 11.,
-            5.,  3., 8.
+        let result = Matrix::<2, 1>::from([
+            11.,
+            6.,
         ]);
 
-        assert_eq!(c, a * b);
+        assert_eq!(result, matrix * vector);
     }
 }

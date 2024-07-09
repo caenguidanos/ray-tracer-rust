@@ -118,7 +118,7 @@ impl SpaceElement<Point> {
     }
 
     pub fn to_matrix(&self) -> Matrix<4, 1> {
-        Matrix::from([self.x, self.z, self.y, 0.])
+        Matrix::from([self.x, self.y, self.z, 0.])
     }
 }
 
@@ -257,7 +257,7 @@ impl SpaceElement<Vector> {
     }
 
     pub fn to_matrix(&self) -> Matrix<4, 1> {
-        Matrix::from([self.x, self.z, self.y, 1.])
+        Matrix::from([self.x, self.y, self.z, 1.])
     }
 }
 
