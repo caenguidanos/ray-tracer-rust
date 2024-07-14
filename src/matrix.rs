@@ -44,35 +44,29 @@ where
         self.data.par_iter().all(|element| *element == 0.)
     }
 
-    pub fn is_square(&self) -> bool {
-        self.cols == self.rows
-    }
+    pub fn transpose(&self) -> Matrix<N, M>
+    where
+        [f64; N * M]:,
+    {
+        let mut matrix = Matrix::<N, M>::new();
 
-    pub fn is_simetric(&self) -> bool {
-        *self == self.clone().transpose()
-    }
+        for position in 0..self.data.len() {
+            let Some((row, col)) = self.get_row_col(position) else {
+                continue;
+            };
+            let Some(target_position) = matrix.get_position(col, row) else {
+                continue;
+            };
 
-    pub fn is_antisimetric(&self) -> bool {
-        *self == -self.clone().transpose()
+            matrix.data[target_position] = self.data[position];
+        }
+
+        matrix
     }
 
     pub fn get(&self, row: usize, col: usize) -> Option<&f64> {
         let position = self.get_position(row, col)?;
         self.data.get(position)
-    }
-
-    pub fn identity(mut self) -> Self {
-        if self.rows != self.cols {
-            return self;
-        }
-
-        let mut position: usize = 0;
-        while position < self.data.len() {
-            self.data[position] = 1.;
-            position += self.cols + 1;
-        }
-
-        self
     }
 
     pub fn get_position(&self, row: usize, col: usize) -> Option<usize> {
@@ -111,26 +105,6 @@ where
         }
 
         None
-    }
-
-    pub fn transpose<const P: usize, const Q: usize>(self) -> Matrix<P, Q>
-    where
-        [f64; P * Q]:,
-    {
-        let mut matrix = Matrix::<P, Q>::new();
-
-        for position in 0..self.data.len() {
-            let Some((row, col)) = self.get_row_col(position) else {
-                continue;
-            };
-            let Some(target_position) = matrix.get_position(col, row) else {
-                continue;
-            };
-
-            matrix.data[target_position] = self.data[position];
-        }
-
-        matrix
     }
 
     pub fn get_row(&self, row: usize) -> Result<[f64; N], Error> {
@@ -247,6 +221,49 @@ where
         }
 
         Ok(())
+    }
+}
+
+impl<const N: usize> Matrix<N, N>
+where
+    [f64; N * N]:,
+{
+    pub fn is_symmetric(&self) -> bool
+    where
+        [f64; N * N]:,
+    {
+        *self == self.transpose()
+    }
+
+    pub fn is_anti_symmetric(&self) -> bool
+    where
+        [f64; N * N]:,
+    {
+        *self == -self.transpose()
+    }
+
+    pub fn identity(mut self) -> Self {
+        let mut position: usize = 0;
+        while position < self.data.len() {
+            self.data[position] = 1.;
+            position += self.cols + 1;
+        }
+        self
+    }
+
+    pub fn determinant(&self) -> Option<f64> {
+        return match self.rows {
+            2 => Some((self.data[0] * self.data[3]) - (self.data[1] * self.data[2])),
+            3 => Some(
+                (self.data[0] * self.data[4] * self.data[8])
+                    - (self.data[0] * self.data[5] * self.data[7])
+                    - (self.data[1] * self.data[4] * self.data[8])
+                    + (self.data[1] * self.data[5] * self.data[6])
+                    - (self.data[2] * self.data[4] * self.data[6])
+                    + (self.data[2] * self.data[4] * self.data[7]),
+            ),
+            _ => None,
+        };
     }
 }
 
@@ -657,7 +674,7 @@ mod tests {
         #[rustfmt::skip]
         let transposed = Matrix::<2, 3>::from([
             1., 3., 5.,
-            2., 4., 6.
+            2., 4., 6.,
         ]);
 
         assert_eq!(matrix.transpose(), transposed);
@@ -715,17 +732,6 @@ mod tests {
     }
 
     #[test]
-    fn matrix_is_square() {
-        #[rustfmt::skip]
-        let a = Matrix::<2, 2>::from([
-            1., 2.,
-            4., 1.,
-        ]);
-
-        assert!(a.is_square());
-    }
-
-    #[test]
     fn matrix_is_zero() {
         #[rustfmt::skip]
         let a = Matrix::<2, 2>::from([
@@ -774,5 +780,37 @@ mod tests {
         ]);
 
         assert_eq!(result, matrix * point);
+    }
+
+    #[test]
+    fn matrix_can_be_symmetric() {
+        #[rustfmt::skip]
+        let matrix = Matrix::<3, 3>::from([
+             1., 7., 3.,
+             7., 4., 5.,
+             3., 5., 2.
+        ]);
+
+        assert!(matrix.is_symmetric());
+    }
+
+    #[test]
+    fn matrix_can_be_determined() {
+        #[rustfmt::skip]
+        let matrix = Matrix::<2, 2>::from([
+             6., 7.,
+             1., 3.,
+        ]);
+
+        assert_eq!(Some(11.), matrix.determinant());
+
+        #[rustfmt::skip]
+        let matrix = Matrix::<3, 3>::from([
+             1., 3., 2.,
+             0., 0., 12.,
+             6., 7., 3.
+        ]);
+
+        assert_eq!(Some(132.), matrix.determinant());
     }
 }
