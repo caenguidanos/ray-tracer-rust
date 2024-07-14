@@ -388,7 +388,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::vectors::{SpaceElement, Vector};
+    use crate::vectors::{Point, SpaceElement, Vector};
 
     use super::*;
 
@@ -754,5 +754,25 @@ mod tests {
         ]);
 
         assert_eq!(result, matrix * vector);
+    }
+
+    #[test]
+    fn matrix_can_be_multiplied_by_a_point() {
+        #[rustfmt::skip]
+        let matrix = Matrix::<2, 4>::from([
+            1., 2., 3., -3.,
+            4., 1., 0.,  0.
+        ]);
+
+        #[rustfmt::skip]
+        let point = SpaceElement::<Point>::new(1., 2., 3.).to_matrix();
+
+        #[rustfmt::skip]
+        let result = Matrix::<2, 1>::from([
+            14.,
+            6.,
+        ]);
+
+        assert_eq!(result, matrix * point);
     }
 }

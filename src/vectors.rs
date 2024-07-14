@@ -116,6 +116,10 @@ impl SpaceElement<Point> {
 
         (x, y, z)
     }
+
+    pub fn to_matrix(&self) -> Matrix<4, 1> {
+        Matrix::from([self.x, self.y, self.z, 0.])
+    }
 }
 
 impl PartialEq for SpaceElement<Point> {
